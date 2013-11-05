@@ -37,7 +37,7 @@ class AddressParser(object):
         'Washington': 'WA', 'North Carolina': 'NC', 'District of Columbia': 'DC', 'Texas': 'TX', 'Nevada': 'NV',
         'Maine': 'ME', 'Rhode Island': 'RI'}
     
-    def __init__(self, suffixes=None, cities=None, streets=None, logger=None, required_confidence=0.65):
+    def __init__(self, suffixes=None, cities=None, streets=None, logger=None):
         '''
         suffixes, cities and streets provide a chance to use different lists than the provided lists.
         suffixes is probably good for most users, unless you have some suffixes not recognized by USPS.
@@ -49,7 +49,6 @@ class AddressParser(object):
         will decrease incorrect street names.       
         '''
         self.logger = logger
-        self.required_confidence = required_confidence
         if suffixes:
             self.suffixes = suffixes
         else:
@@ -142,8 +141,22 @@ class Address:
         address = address.strip().replace('.', '')
         
         # We'll use this for guessing.
-        self.comma_separated_address = address.split(',')
-        address = address.replace(',', '')
+        sep_list = []
+        for item in address.split(','):
+            sep_list.append(item.strip())
+        self.comma_separated_address = sep_list
+        
+        address = address.lower().replace(',', '')
+        # lets start off by using the comma separated address
+        if len(self.comma_separated_address):
+            for token in reversed(self.comma_separated_address):
+                if self.check_zip(token): continue
+                if self.check_state(token): continue
+                if self.check_city(token): continue
+            
+            if self.zipCode: address = address.replace(self.zipCode, '')
+            if self.state: address = address.replace(self.state.lower(), '')
+            if self.city: address = address.replace(self.city.lower(), '')
         
         # Try all our address regexes. USPS says parse from the back.
         address = reversed(address.split())
@@ -202,7 +215,7 @@ class Address:
             return False
         # Multi word cities
         if self.city is not None and self.street_suffix is None and self.street is None:
-            print "Checking for multi part city", token.lower(), token.lower() in shortened_cities.keys()
+            # print "Checking for multi part city", token.lower(), token.lower() in shortened_cities.keys()
             if token.lower() + ' ' + self.city in self.parser.cities:
                 self.city = self._clean((token.lower() + ' ' + self.city).capitalize())
                 return True
@@ -380,7 +393,7 @@ class Address:
         for regex in apartment_regexes:
             apartment_match = re.search(regex, address, re.IGNORECASE)
             if apartment_match:
-                print "Matched regex: ", regex, apartment_match.group()
+                # print "Matched regex: ", regex, apartment_match.group()
                 self.apartment = self._clean(apartment_match.group())
                 address = re.sub(regex, "", address, flags=re.IGNORECASE)
             # Now check for things like ",  ,"
@@ -423,5 +436,5 @@ class Address:
 
 if __name__ == '__main__':
     ap = AddressParser()
-    addr = Address('418 N. Carroll St. 2nd floor austin tx 12345', ap)
+    addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
     print addr.as_dict()
