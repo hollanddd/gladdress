@@ -106,6 +106,7 @@ class Address:
     '''
     unmatched = False
     unmatched_list = None
+    comma_separated_address = []
     last_matched = None
     house_number = None
     street_prefix = None
@@ -148,7 +149,7 @@ class Address:
         
         address = address.lower().replace(',', '')
         # lets start off by using the comma separated address
-        if len(self.comma_separated_address):
+        if len(self.comma_separated_address) > 1:
             for token in reversed(self.comma_separated_address):
                 if self.check_zip(token): continue
                 if self.check_state(token): continue
@@ -188,6 +189,7 @@ class Address:
         Returns true if token is matches a zip code (5 numbers). Zip code must be the 
         last token in an address (minus anything removed during preprocessing)
         '''
+        if type(token) == int: token = str(token)
         if self.zipCode is None:
             if self.last_matched is not None:
                 return False
@@ -204,26 +206,26 @@ class Address:
         shortened_cities = {'saint': 'st.'}
         if self.city is None and self.state is not None and self.street_suffix is None:
             if token.lower() in self.parser.cities:
-                self.city = self._clean(token.capitalize())
+                self.city = self._clean(self._cap(token))
                 return True
             return False
         # check that we are in the correct location and that we have at least one comma in the address
         if self.city is None and self.apartment is None and self.street_suffix is None and len(self.comma_separated_address) > 1:
             if token.lower() in self.parser.cities:
-                self.city = self._clean(token.capitalize())
+                self.city = self._clean(self._cap(token))
                 return True
             return False
         # Multi word cities
         if self.city is not None and self.street_suffix is None and self.street is None:
             # print "Checking for multi part city", token.lower(), token.lower() in shortened_cities.keys()
             if token.lower() + ' ' + self.city in self.parser.cities:
-                self.city = self._clean((token.lower() + ' ' + self.city).capitalize())
+                self.city = self._clean(self._cap(self._cap(token) + ' ' + self.city))
                 return True
             if token.lower() in shortened_cities.keys():
                 token = shortened_cities[token.lower()]
                 print "Checking for shorted multi part city", token.lower() + ' ' + self.city
                 if token.lower() + ' ' + self.city.lower() in self.parser.cities:
-                    self.city = self._clean(token.capitalize() + ' ' + self.city.capitalize())
+                    self.city = self._clean(self._cap(token) + ' ' + self._cap(self.city))
                     return True
     
     def check_state(self, token):
@@ -399,6 +401,11 @@ class Address:
             # Now check for things like ",  ,"
         address = re.sub(r"\,\s*\,", ",", address)
         return address
+    def _cap(self, word):
+	    parts = []
+	    for part in word.split():
+		    parts.append(part.capitalize())
+	    return ' '.join(parts).strip()
     
     def _clean(self, item):
         ''''''
