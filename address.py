@@ -1,4 +1,5 @@
 import re, csv, os, sys
+from __util__ import *
 
 class InvalidAddressException(Exception): pass
 
@@ -442,6 +443,7 @@ class Address:
     
 
 if __name__ == '__main__':
-    ap = AddressParser()
-    addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
-    print addr.as_dict()
+    print ordinal(5)
+    # ap = AddressParser()
+    # addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
+    # print addr.as_dict()
