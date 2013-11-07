@@ -130,6 +130,7 @@ class Address:
     city = None
     state = None
     zipCode = None
+    blind_guess = {}
     original = None
     issues = []
     
@@ -211,6 +212,12 @@ class Address:
                 return True
             if len(token) == 5 and re.match(r'\d{5}', token):
                 self.zipCode = to_utf8(token)
+                if self.parser.zipCodes.has_key(self.zipCode):
+                    self.blind_guess = {
+                                           'city': self.parser.zipCodes[self.zipCode]['city'],
+                                           'state': self.parser.zipCodes[self.zipCode]['state']
+                                       }
+                    
                 return True                
         return False
     
@@ -419,7 +426,8 @@ class Address:
                             'state':self.state,
                             'zip':self.zipCode,
                             'unmatched': self.unmatched_list,
-                            'issues': self.issues
+                            'issues': self.issues,
+                            'blind_guess': self.blind_guess
                         }
         return address_dict
     
@@ -431,7 +439,6 @@ class Address:
     
 
 if __name__ == '__main__':
-    pass
-    # ap = AddressParser()
-    # addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
-    # print addr.as_dict()
+    ap = AddressParser()
+    addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
+    print addr.as_dict()
