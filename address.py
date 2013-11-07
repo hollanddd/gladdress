@@ -175,14 +175,19 @@ class Address:
             if self.city: address = address.replace(self.city.lower(), '')
         
         # populate the blind_guess with a house number if we can
+        house_num_placeholder = address.split()[0]
         try:
             # yeah that's a little ugly but gets the job done
-            self.blind_guess['house_number'] = str(int(address.split()[0]))
+            self.blind_guess['house_number'] = str(int(house_num_placeholder))
         except ValueError:
-            # if we fall here we don't want that key to be available later
-            # display to the screen for now
-            print 'address zero index is:', address.split()[0]
-            pass
+                if re.match(street_num_regex, house_num_placeholder):
+                    # we got something like 111-123 or 111/123, lets stash it
+                    self.blind_guess['house_number'] = house_num_placeholder
+                else:
+                    # if we fall here we don't want that key to be available later
+                    # display to the screen for now
+                    print 'address zero index is:', house_num_placeholder
+                    pass
         # Try all our address regexes. USPS says parse from the back.
         address = reversed(address.split())
         # Save unmatched to process after the rest is processed.
@@ -355,11 +360,9 @@ class Address:
         We assume anything in front of a house_number is a building name.
         '''
         if self.street and self.house_number is None and re.match(street_num_regex, token.lower()):
-            if '/' in token: 
-                token = token.split('/')[0]
-            if '-' in token: 
-                token = token.split('-')[0]
-            self.house_number = to_utf8(str(token))
+            if self.blind_guess.has_key('house_number') and token == self.blind_guess['house_number']:
+                self.house_number = to_utf8(str(token))
+                return True
             return True
         return False
     

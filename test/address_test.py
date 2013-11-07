@@ -50,7 +50,7 @@ class AddressTest(unittest.TestCase):
     
     def test_multi_address(self):
         addr = Address('416/418 N. Carroll St.', self.parser)
-        self.assertEqual('416', addr.house_number)
+        self.assertEqual('416/418', addr.house_number)
         self.assertEqual('N.', addr.street_prefix)
         self.assertEqual('Carroll', addr.street)
         self.assertEqual('St.', addr.street_suffix)
