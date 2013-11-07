@@ -384,22 +384,6 @@ class Address:
         # Clear the address of things like 'X units', which shouldn't be in an address anyway. We won't save this for now.
         if re.search(r"-?-?\w+ units", address, re.IGNORECASE):
             address = re.sub(r"-?-?\w+ units", "", address, flags=re.IGNORECASE)
-        # Now let's get the apartment stuff out of the way. Using only sure match regexes, delete apartment parts from
-        # the address. This prevents things like "Unit" being the street name.
-        apartment_regexes = [
-                             r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
-                             r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
-                             r'style\s\w{1,2}', r'townhouse style\s\w{1,2}'
-                            ]
-        
-        for regex in apartment_regexes:
-            apartment_match = re.search(regex, address, re.IGNORECASE)
-            if apartment_match:
-                # print "Matched regex: ", regex, apartment_match.group()
-                self.apartment = self._clean(apartment_match.group())
-                address = re.sub(regex, "", address, flags=re.IGNORECASE)
-            # Now check for things like ",  ,"
-        address = re.sub(r"\,\s*\,", ",", address)
         return address
     
     def _cap(self, word):
