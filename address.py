@@ -120,7 +120,7 @@ class Address:
     
     def __init__(self, address, parser=None, logger=None):
         ''''''
-        self.original = self._clean(address)
+        self.original = to_utf8(address)
         self.parser = parser
         self.logger = logger
         
@@ -196,7 +196,7 @@ class Address:
                 self.zipCode = self._cleanup(token)
                 return True
             if len(token) == 5 and re.match(r'\d{5}', token):
-                self.zipCode = self._clean(token)
+                self.zipCode = to_utf8(token)
                 return True                
         return False
     
@@ -205,43 +205,43 @@ class Address:
         shortened_cities = {'saint': 'st.'}
         if self.city is None and self.state is not None and self.street_suffix is None:
             if token.lower() in self.parser.cities:
-                self.city = self._clean(self._cap(token))
+                self.city = to_utf8(cap_words(token))
                 return True
             return False
         # check that we are in the correct location and that we have at least one comma in the address
         if self.city is None and self.apartment is None and self.street_suffix is None and len(self.comma_separated_address) > 1:
             if token.lower() in self.parser.cities:
-                self.city = self._clean(self._cap(token))
+                self.city = to_utf8(cap_words(token))
                 return True
             return False
         # Multi word cities
         if self.city is not None and self.street_suffix is None and self.street is None:
             # print "Checking for multi part city", token.lower(), token.lower() in shortened_cities.keys()
             if token.lower() + ' ' + self.city in self.parser.cities:
-                self.city = self._clean(self._cap(self._cap(token) + ' ' + self.city))
+                self.city = to_utf8(cap_words(cap_words(token) + ' ' + self.city))
                 return True
             if token.lower() in shortened_cities.keys():
                 token = shortened_cities[token.lower()]
                 print "Checking for shorted multi part city", token.lower() + ' ' + self.city
                 if token.lower() + ' ' + self.city.lower() in self.parser.cities:
-                    self.city = self._clean(self._cap(token) + ' ' + self._cap(self.city))
+                    self.city = to_utf8(cap_words(token) + ' ' + cap_words(self.city))
                     return True
     
     def check_state(self, token):
         '''Check if state is in either the keys or values of our states list. Must come before the suffix.'''
         if len(token) == 2 and self.state is None:
             if token.capitalize() in self.parser.states.keys():
-                self.state = self._clean(self.parser.states[token.capitalize()])
+                self.state = to_utf8(self.parser.states[token.capitalize()])
                 return True
             elif token.upper() in self.parser.states.values():
-                self.state = self._clean(token.upper())
+                self.state = to_utf8(token.upper())
                 return True
         if self.state is None and self.street_suffix is None and len(self.comma_separated_address) > 1:
             if token.capitalize() in self.parser.states.keys():
-                self.state = self._clean(self.parser.states[token.capitalize()])
+                self.state = to_utf8(self.parser.states[token.capitalize()])
                 return True
             elif token.upper() in self.parser.states.values():
-                self.state = self._clean(token.upper())
+                self.state = to_utf8(token.upper())
                 return True
         return False
     
@@ -258,14 +258,14 @@ class Address:
         
         for regex in apartment_regexes:
             if re.match(regex, token.lower()):
-                self.apartment = self._clean(token)
+                self.apartment = to_utf8(token)
                 return True
         if self.apartment and token.lower() in ['apt', 'apartment']:
-            self.apartment = self._clean(token + ' ' + self.apartment)
+            self.apartment = to_utf8(token + ' ' + self.apartment)
             return True
         if not self.street_suffix and not self.street and not self.apartment:
             if re.match(r'\d?\w?', token.lower()):
-                self.apartment = self._clean(token)
+                self.apartment = to_utf8(token)
                 return True
         return False
     
@@ -278,10 +278,10 @@ class Address:
         if self.street_suffix is None and self.street is None:
             if token.upper() in self.parser.suffixes.keys():
                 suffix = self.parser.suffixes[token.upper()]
-                self.street_suffix = self._clean(suffix.capitalize() + '.')
+                self.street_suffix = to_utf8(suffix.capitalize() + '.')
                 return True
             elif token.upper() in self.parser.suffixes.values():
-                self.street_suffix = self._clean(token.capitalize() + '.')
+                self.street_suffix = to_utf8(token.capitalize() + '.')
                 return True
         return False              
     
@@ -293,14 +293,14 @@ class Address:
         '''
         # first check for single word streets between a prefix and a suffix
         if self.street is None and self.street_suffix is not None and self.street_prefix is None and self.house_number is None:
-            self.street = self._clean(token.capitalize())
+            self.street = to_utf8(token.capitalize())
             return True
         # now check for multiple word streets. this check must come after the check for street_prefix and house_number for this reason.
         elif self.street is not None and self.street_suffix is not None and self.street_prefix is None and self.house_number is None:
-            self.street = self._clean(token.capitalize() + ' ' + self.street)
+            self.street = to_utf8(token.capitalize() + ' ' + self.street)
             return True
         if not self.street_suffix and not self.street and token.lower() in self.parser.streets:
-            self.street = self._clean(token)
+            self.street = to_utf8(token)
             return True
         return False
     
@@ -310,7 +310,7 @@ class Address:
         Standardizes to 1 or two letters, followed by a period.
         '''
         if self.street and not self.street_prefix and token.lower().replace('.', '') in self.parser.prefixes.keys():
-            self.street_prefix = self._clean(self.parser.prefixes[token.lower().replace('.', '')])
+            self.street_prefix = to_utf8(self.parser.prefixes[token.lower().replace('.', '')])
             return True
         return False
     
@@ -324,7 +324,7 @@ class Address:
                 token = token.split('/')[0]
             if '-' in token: 
                 token = token.split('-')[0]
-            self.house_number = self._clean(str(token))
+            self.house_number = to_utf8(str(token))
             return True
         return False
     
@@ -335,9 +335,9 @@ class Address:
         '''
         if self.street and self.house_number:
             if not self.building:
-                self.building = self._clean(token)
+                self.building = to_utf8(token)
             else:
-                self.building = self._clean(token + ' ' + self.building)
+                self.building = to_utf8(token + ' ' + self.building)
             return True
         return False
     
@@ -357,7 +357,7 @@ class Address:
         # how about a suffixless street
         if self.street_suffix is None and self.street is None and self.street_prefix is None and self.house_number is None:
             if re.match(r'[A-za-z]', token):
-                self.street = self._clean(token.capitalize())
+                self.street = to_utf8(token.capitalize())
                 return True
         return False
     
@@ -385,16 +385,6 @@ class Address:
         if re.search(r"-?-?\w+ units", address, re.IGNORECASE):
             address = re.sub(r"-?-?\w+ units", "", address, flags=re.IGNORECASE)
         return address
-    
-    def _cap(self, word):
-	    parts = []
-	    for part in word.split():
-		    parts.append(part.capitalize())
-	    return ' '.join(parts).strip()
-    
-    def _clean(self, item):
-        ''''''
-        if item: return item.encode('utf-8', 'replace'); return None
     
     def __repr__(self):
         return unicode(self)
