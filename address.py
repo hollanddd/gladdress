@@ -16,6 +16,7 @@ class AddressParser(object):
     suffixes, and street names that will help the Address object parse the given string. 
     It's loaded with defaults that work in the average case, but can be adjusted for specific cases.
     '''
+    zipCodes = {}
     suffixes = {}
     cities = []
     streets = []
@@ -48,6 +49,7 @@ class AddressParser(object):
         will decrease incorrect street names.       
         '''
         self.logger = logger
+        self.load_zips(os.path.join(cwd, 'zipcode.csv'))
         if suffixes:
             self.suffixes = suffixes
         else:
@@ -65,6 +67,19 @@ class AddressParser(object):
         the custom loaded cities, streets, suffixes, etc.
         '''
         return Address(address, self, self.logger)
+    
+    def load_zips(self, file_name):
+        '''
+        Builds a zip code dictionary from csv
+        '''
+        with open(file_name) as f:
+            zips = csv.DictReader(f, delimiter=',')
+            for zipCode in zips:
+                self.zipCodes[zipCode['zip']] = {
+                                                    'city': zipCode['city'], 
+                                                    'state': zipCode['state']
+                                                }
+                
     
     def load_suffixes(self, file_name):
         '''
@@ -141,7 +156,6 @@ class Address:
         # It's possible we can use commas for better guessing.
         address = address.strip().replace('.', '')
         
-        # We'll use this for guessing.
         sep_list = []
         for item in address.split(','):
             sep_list.append(item.strip())
@@ -185,7 +199,7 @@ class Address:
     
     def check_zip(self, token):
         '''
-        Returns true if token is matches a zip code (5 numbers). Zip code must be the 
+        Returns true if token is matches a zip code (5 and 9 number). Zip code must be the 
         last token in an address (minus anything removed during preprocessing)
         '''
         if type(token) == int: token = str(token)
@@ -376,8 +390,7 @@ class Address:
     
     def preprocess_address(self, address):
         '''
-        Takes a basic address and attempts to clean it up, extracts reasonably assured 
-        bits that may throw off the rest of the parsing, and return the cleaned address
+        Takes a basic address and attempts to clean it up
         '''
         address = address.replace('# ', '#')
         address = address.replace(' & ', '&')
