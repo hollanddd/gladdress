@@ -208,9 +208,14 @@ class Address:
             
         # Post processing
         self.unmatched_list = unmatched
-        for token in unmatched:
-            if self.check_apartment_number(token): continue
-            self.unmatched = True
+        if len(unmatched) == 2:
+            if self.check_apartment_number(' '.join(reversed(unmatched))):
+                self.unmatched_list = []
+                return True
+        else:
+            for token in unmatched:
+                if self.check_apartment_number(token): continue
+                self.unmatched = True
     
     def check_zip(self, token):
         '''
@@ -429,7 +434,29 @@ class Address:
         address = address.replace(' & ', '&')
         # Clear the address of things like 'X units', which shouldn't be in an address anyway. We won't save this for now.
         if re.search(r"-?-?\w+ units", address, re.IGNORECASE):
-            address = re.sub(r"-?-?\w+ units", "", address, flags=re.IGNORECASE)
+            address = re.sub(r"-?-?\w+ units", "", address, flags=re.IGNORECASE)        
+        # Now let's get the apartment stuff out of the way. Using only sure match regexes, delete apartment parts from
+        # the address. This prevents things like "Unit" being the street name.
+        apartment_regexes = [
+                             r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
+                             r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
+                             r'style\s\w{1,2}', r'townhouse style\s\w{1,2}'
+                            ]
+        
+        for regex in apartment_regexes:
+            apartment_match = re.search(regex, address, re.IGNORECASE)
+            if apartment_match:
+                carry_on = True
+                for part in apartment_match.group().split():
+                    if part.lower() in ['st', 'street', 'rd', 'road']:
+                        carry_on = False
+                        break
+                if carry_on:
+                    # print "Matched regex: ", regex, apartment_match.group()
+                    self.apartment = to_utf8(apartment_match.group())
+                    address = re.sub(regex, "", address, flags=re.IGNORECASE)
+            # Now check for things like ",  ,"
+        address = re.sub(r"\,\s*\,", ",", address)
         return address
     
     def __repr__(self):
@@ -466,5 +493,5 @@ class Address:
 
 if __name__ == '__main__':
     ap = AddressParser()
-    addr = Address('431 West Johnson, Madison, WI', ap)
+    addr = Address('111-123 Unit St providence RI 02909', ap)
     print addr.as_dict()
