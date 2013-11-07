@@ -19,11 +19,12 @@ class AddressTest(unittest.TestCase):
 	      addr.check_zip('12345')
 	      self.assertEqual('12345', addr.zipCode)
 	  
-    def test_malibu(self):
+    def test_cryptic_beverly_hills(self):
 	      addr = Address('205 1105 14 90210', self.parser)
 	      self.assertEqual('90210', addr.zipCode)
 	      self.assertEqual('CA', addr.state)
 	      self.assertEqual('Beverly Hills', addr.city)
+	      self.assertEqual('205', addr.house_number)
 	  
     def test_no_comma_address(self):
         addr = Address('2 N. Park Street Madison WI 53703', self.parser)
@@ -104,7 +105,6 @@ class AddressTest(unittest.TestCase):
     
     def test_unit_prefix(self):
         addr = Address('407 west doty st unit 2', self.parser)
-        print addr.as_dict(), '\n'
         self.assertEqual('407', addr.house_number)
         self.assertEqual('W.', addr.street_prefix)
         self.assertEqual('Doty', addr.street)
@@ -130,7 +130,6 @@ class AddressTest(unittest.TestCase):
         self.assertEqual(None, addr.city)
         self.assertEqual(None, addr.state)
         self.assertEqual(None, addr.zipCode)
-        print addr.as_dict()
         self.assertEqual('apt 2', addr.apartment)
     
     def test_suffixless_street_with_city(self):

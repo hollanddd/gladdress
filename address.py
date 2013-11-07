@@ -119,7 +119,7 @@ class Address:
     Makes an attempt to break an address into components
     '''
     unmatched = False
-    unmatched_list = None
+    unmatched_list = []
     comma_separated_address = []
     last_matched = None
     house_number = None
@@ -130,7 +130,6 @@ class Address:
     city = None
     state = None
     zipCode = None
-    blind_guess = {}
     original = None
     issues = []
     
@@ -139,6 +138,7 @@ class Address:
         self.original = to_utf8(address)
         self.parser = parser
         self.logger = logger
+        self.blind_guess = {}
         
         if address is None: return 
         
@@ -174,6 +174,15 @@ class Address:
             if self.state: address = address.replace(self.state.lower(), '')
             if self.city: address = address.replace(self.city.lower(), '')
         
+        # populate the blind_guess with a house number if we can
+        try:
+            # yeah that's a little ugly but gets the job done
+            self.blind_guess['house_number'] = str(int(address.split()[0]))
+        except ValueError:
+            # if we fall here we don't want that key to be available later
+            # display to the screen for now
+            print 'address zero index is:', address.split()[0]
+            pass
         # Try all our address regexes. USPS says parse from the back.
         address = reversed(address.split())
         # Save unmatched to process after the rest is processed.
@@ -213,11 +222,8 @@ class Address:
             if len(token) == 5 and re.match(r'\d{5}', token):
                 self.zipCode = to_utf8(token)
                 if self.parser.zipCodes.has_key(self.zipCode):
-                    self.blind_guess = {
-                                           'city': self.parser.zipCodes[self.zipCode]['city'],
-                                           'state': self.parser.zipCodes[self.zipCode]['state']
-                                       }
-                    
+                    self.blind_guess['city'] = self.parser.zipCodes[self.zipCode]['city']
+                    self.blind_guess['state'] = self.parser.zipCodes[self.zipCode]['state']
                 return True                
         return False
     
@@ -374,6 +380,11 @@ class Address:
         '''
         When we find something that doesn't match, we can make an educated guess and log it as such.
         '''
+        # is it a house number
+        if self.house_number is None and self.blind_guess.has_key('house_number'):
+            if token == self.blind_guess['house_number']:
+                self.house_number = to_utf8(self.blind_guess['house_number'])
+                return True
         # Check if this is an apartment
         if token.lower() in ['apt', 'apartment']:
             return False
