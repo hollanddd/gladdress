@@ -440,7 +440,7 @@ class Address:
         apartment_regexes = [
                              r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
                              r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
-                             r'style\s\w{1,2}', r'townhouse style\s\w{1,2}'
+                             r'style\s\w{1,2}', r'townhouse style\s\w{1,2}', r'\d*\w* floor', r'suite \d*'
                             ]
         
         for regex in apartment_regexes:
@@ -493,5 +493,5 @@ class Address:
 
 if __name__ == '__main__':
     ap = AddressParser()
-    addr = Address('111-123 Unit St providence RI 02909', ap)
+    addr = Address('351 King St. 2nd Floor, San Francisco, CA, 94158', ap)
     print addr.as_dict()

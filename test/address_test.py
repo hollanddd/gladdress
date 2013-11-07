@@ -153,6 +153,13 @@ class AddressTest(unittest.TestCase):
 	      addr = Address('18N608 some st madison, wi', self.parser)
 	      self.assertEqual('18N608', addr.house_number)
 	  
+    def test_second_delivery_line_has_floor(self):
+	      addr = Address('351 King St. 2nd Floor, San Francisco, CA, 94158', self.parser)
+	      self.assertEqual('2nd Floor', addr.apartment)
+    def test_second_deliver_line_has_suite(self):
+	      addr = Address('351 King St. suite 500, San Francisco, CA, 94158', self.parser)
+	      self.assertEqual('suite 500', addr.apartment)
+	  
 
 class AddressParserTest(unittest.TestCase):
     ap = None
