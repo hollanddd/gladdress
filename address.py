@@ -5,7 +5,7 @@ class InvalidAddressException(Exception): pass
 
 # Keep lowercase, no periods
 # Requires number first, then optional dash plus numbers
-street_num_regex = r'^(\d+)([-/]?)(\d*)$'
+street_num_regex = r'^(\d+)([-/\w*]?)(\d*)$'
 
 apartment_regex_num = r'(#?)(\d*)(\w*)'
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -342,7 +342,7 @@ class Address:
         '''
         # first check for single word streets between a prefix and a suffix
         if self.street is None and self.street_suffix is not None and self.street_prefix is None and self.house_number is None:
-            self.street = to_utf8(token.capitalize())
+            self.street = to_utf8(cap_words(token))
             return True
         # now check for multiple word streets. this check must come after the check for street_prefix and house_number for this reason.
         elif self.street is not None and self.street_suffix is not None and self.street_prefix is None and self.house_number is None:
@@ -370,7 +370,7 @@ class Address:
         '''
         if self.street and self.house_number is None and re.match(street_num_regex, token.lower()):
             if self.blind_guess.has_key('house_number') and token == self.blind_guess['house_number']:
-                self.house_number = to_utf8(str(token))
+                self.house_number = to_utf8(str(token).upper())
                 return True
             return True
         return False

@@ -113,7 +113,7 @@ class AddressTest(unittest.TestCase):
         self.assertEqual(None, addr.state)
         self.assertEqual(None, addr.zipCode)
         self.assertEqual('unit 2', addr.apartment)
-
+    
     def test_unit_street_rhode_island(self):
         addr = Address('111-123 Unit St providence RI 02909', self.parser)
         self.assertEqual('Unit', addr.street)
@@ -144,11 +144,15 @@ class AddressTest(unittest.TestCase):
         self.assertEqual(None, addr.apartment)
     
     def test_simple_address_issue_(self):
-	    addr = Address('351 King St. #400, San Francisco, CA, 94158', self.parser)
-	    self.assertEqual('351', addr.house_number)
-	    self.assertEqual('San Francisco', addr.city)
-	    self.assertEqual('#400', addr.apartment)
-	
+	      addr = Address('351 King St. #400, San Francisco, CA, 94158', self.parser)
+	      self.assertEqual('351', addr.house_number)
+	      self.assertEqual('San Francisco', addr.city)
+	      self.assertEqual('#400', addr.apartment)
+	  
+    def test_complex_house_num(self):
+	      addr = Address('18N608 some st madison, wi', self.parser)
+	      self.assertEqual('18N608', addr.house_number)
+	  
 
 class AddressParserTest(unittest.TestCase):
     ap = None
