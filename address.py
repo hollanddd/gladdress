@@ -224,9 +224,13 @@ class Address:
     def check_city(self, token):
         '''Checks for known city in city list'''
         shortened_cities = {'saint': 'st.'}
+        # blind guess logic is going to fill the state more times than not. lets handle here
         if self.city is None and self.state is not None and self.street_suffix is None:
             if token.lower() in self.parser.cities:
                 self.city = to_utf8(cap_words(token))
+                return True
+            elif self.blind_guess.has_key('city'):
+                self.city = to_utf8(self.blind_guess['city'])
                 return True
             return False
         # check that we are in the correct location and that we have at least one comma in the address
@@ -264,6 +268,10 @@ class Address:
             elif token.upper() in self.parser.states.values():
                 self.state = to_utf8(token.upper())
                 return True
+        # a blind guess is better than nothing
+        if self.state is None and self.blind_guess.has_key('state'):
+            self.state = to_utf8(self.blind_guess['state'])
+            return True
         return False
     
     def check_apartment_number(self, token):
@@ -440,5 +448,5 @@ class Address:
 
 if __name__ == '__main__':
     ap = AddressParser()
-    addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
+    addr = Address('205 1105 14 90210', ap)
     print addr.as_dict()

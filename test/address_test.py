@@ -9,11 +9,6 @@ class AddressTest(unittest.TestCase):
     def setUp(self):
         self.parser = AddressParser()
     
-    def test_checks_work_in_isolation(self):
-	      addr = Address(None, self.parser)
-	      addr.check_city('San Francisco')
-	      self.assertEqual('San Francisco', addr.city)
-  	
     def test_zip_integer(self):
 	      addr = Address(None, self.parser)
 	      addr.check_zip(12345)
@@ -25,10 +20,10 @@ class AddressTest(unittest.TestCase):
 	      self.assertEqual('12345', addr.zipCode)
 	  
     def test_malibu(self):
-        # expected failure as parser only breaks into components
 	      addr = Address('205 1105 14 90210', self.parser)
 	      self.assertEqual('90210', addr.zipCode)
-	      self.assertEqual('205', addr.house_number)
+	      self.assertEqual('CA', addr.state)
+	      self.assertEqual('Beverly Hills', addr.city)
 	  
     def test_no_comma_address(self):
         addr = Address('2 N. Park Street Madison WI 53703', self.parser)
