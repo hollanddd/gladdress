@@ -9,6 +9,7 @@ class UtilityMethodTest(unittest.TestCase):
     
     def test_ordinal(self):
         self.assertEqual('5th', ordinal(5))
+    
 
 if __name__ == '__main__':
     unittest.main()

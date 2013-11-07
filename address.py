@@ -3,8 +3,6 @@ from __util__ import *
 
 class InvalidAddressException(Exception): pass
 
-class AddressConfidenceTooLowException(Exception): pass
-
 # Keep lowercase, no periods
 # Requires number first, then optional dash plus numbers
 street_num_regex = r'^(\d+)([-/]?)(\d*)$'
@@ -118,6 +116,7 @@ class Address:
     state = None
     zipCode = None
     original = None
+    issues = []
     
     def __init__(self, address, parser=None, logger=None):
         ''''''
@@ -125,15 +124,15 @@ class Address:
         self.parser = parser
         self.logger = logger
         
-        if address is None:
-            return 
-        address = self.preprocess_address(address)
-        self.parse_address(address)
+        if address is None: return 
         
+        self.parse_address(self.preprocess_address(address))
+        
+        # It is prefectly valid for an address to not have a house number
         if self.house_number is None or self.house_number <= 0:
-            raise InvalidAddressException('Addresses must have house numbers')
-        elif self.street is None or self.street == '':
-            raise InvalidAddressException('Addresses must have streets') 
+            self.issues.append('House number could not be determined')
+        if self.street is None or self.street == '':
+            self.issues.append('Street could not be determined')
     
     def parse_address(self, address):
         ''''''
@@ -174,7 +173,6 @@ class Address:
             if self.check_house_number(token):  continue
             if self.check_street_prefix(token): continue
             if self.check_street(token):        continue
-            # if self.check_building(token):      continue
             if self.guess_unmatched(token):     continue
             
             unmatched.append(token)
@@ -257,6 +255,7 @@ class Address:
                              r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
                              r'style\s\w{1,2}', r'\d{1,4}/\d{1,4}', r'\d{1,4}', r'\w{1,2}'
                             ]
+        
         for regex in apartment_regexes:
             if re.match(regex, token.lower()):
                 self.apartment = self._clean(token)
@@ -385,7 +384,6 @@ class Address:
         # Clear the address of things like 'X units', which shouldn't be in an address anyway. We won't save this for now.
         if re.search(r"-?-?\w+ units", address, re.IGNORECASE):
             address = re.sub(r"-?-?\w+ units", "", address, flags=re.IGNORECASE)
-        
         # Now let's get the apartment stuff out of the way. Using only sure match regexes, delete apartment parts from
         # the address. This prevents things like "Unit" being the street name.
         apartment_regexes = [
@@ -393,6 +391,7 @@ class Address:
                              r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
                              r'style\s\w{1,2}', r'townhouse style\s\w{1,2}'
                             ]
+        
         for regex in apartment_regexes:
             apartment_match = re.search(regex, address, re.IGNORECASE)
             if apartment_match:
@@ -402,6 +401,7 @@ class Address:
             # Now check for things like ",  ,"
         address = re.sub(r"\,\s*\,", ",", address)
         return address
+    
     def _cap(self, word):
 	    parts = []
 	    for part in word.split():
@@ -431,7 +431,8 @@ class Address:
                             'city':self.city,
                             'state':self.state,
                             'zip':self.zipCode,
-                            'unmatched': self.unmatched_list
+                            'unmatched': self.unmatched_list,
+                            'issues': self.issues
                         }
         return address_dict
     
@@ -443,7 +444,7 @@ class Address:
     
 
 if __name__ == '__main__':
-    print ordinal(5)
+    pass
     # ap = AddressParser()
     # addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
     # print addr.as_dict()

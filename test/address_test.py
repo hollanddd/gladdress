@@ -25,9 +25,22 @@ class AddressTest(unittest.TestCase):
 	      self.assertEqual('12345', addr.zipCode)
 	  
     def test_malibu(self):
+        # expected failure as parser only breaks into components
 	      addr = Address('205 1105 14 90210', self.parser)
-	      self.assertEqual('90210', self.zipCode)
+	      self.assertEqual('90210', addr.zipCode)
+	      self.assertEqual('205', addr.house_number)
 	  
+    def test_no_comma_address(self):
+        addr = Address('2 N. Park Street Madison WI 53703', self.parser)
+        self.assertEqual('2', addr.house_number)
+        self.assertEqual('N.', addr.street_prefix)
+        self.assertEqual('Park', addr.street)
+        self.assertEqual('St.', addr.street_suffix)
+        self.assertEqual('Madison', addr.city)
+        self.assertEqual('WI', addr.state)
+        self.assertEqual('53703', addr.zipCode)
+        self.assertEqual(None, addr.apartment)
+    
     def test_basic_full_address(self):
         addr = Address('2 N. Park Street, Madison, WI 53703', self.parser)
         self.assertEqual('2', addr.house_number)
