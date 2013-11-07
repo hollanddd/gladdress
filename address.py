@@ -238,8 +238,12 @@ class Address:
         # blind guess logic is going to fill the state more times than not. lets handle here
         if self.city is None and self.state is not None and self.street_suffix is None:
             if token.lower() in self.parser.cities:
-                self.city = to_utf8(cap_words(token))
-                return True
+                if len(token.split()) == 1:
+                    if self.blind_guess.has_key('city') and len(self.blind_guess['city'].split()) == 1:
+                        self.city = to_utf8(cap_words(token))
+                        return True
+                    else:
+                        self.city = to_utf8(cap_words(token))
             elif self.blind_guess.has_key('city'):
                 self.city = to_utf8(self.blind_guess['city'])
                 return True
@@ -462,5 +466,5 @@ class Address:
 
 if __name__ == '__main__':
     ap = AddressParser()
-    addr = Address('205 1105 14 90210', ap)
+    addr = Address('431 West Johnson, Madison, WI', ap)
     print addr.as_dict()
