@@ -107,6 +107,37 @@ class AddressTest(unittest.TestCase):
         self.assertEqual(None, addr.zipCode)
         self.assertEqual('#2', addr.apartment)
     
+    def test_unit_prefix(self):
+        addr = Address('407 west doty st unit 2', self.parser)
+        print addr.as_dict(), '\n'
+        self.assertEqual('407', addr.house_number)
+        self.assertEqual('W.', addr.street_prefix)
+        self.assertEqual('Doty', addr.street)
+        self.assertEqual('St.', addr.street_suffix)
+        self.assertEqual(None, addr.city)
+        self.assertEqual(None, addr.state)
+        self.assertEqual(None, addr.zipCode)
+        self.assertEqual('unit 2', addr.apartment)
+
+    def test_unit_street_rhode_island(self):
+        addr = Address('111-123 Unit St providence RI 02909', self.parser)
+        self.assertEqual('Unit', addr.street)
+        self.assertEqual('St.', addr.street_suffix)
+        self.assertEqual('Providence', addr.city)
+        self.assertEqual('111-123', addr.house_number)
+    
+    def test_apt_prefix(self):
+        addr = Address('407 west doty st apt 2', self.parser)
+        self.assertEqual('407', addr.house_number)
+        self.assertEqual('W.', addr.street_prefix)
+        self.assertEqual('Doty', addr.street)
+        self.assertEqual('St.', addr.street_suffix)
+        self.assertEqual(None, addr.city)
+        self.assertEqual(None, addr.state)
+        self.assertEqual(None, addr.zipCode)
+        print addr.as_dict()
+        self.assertEqual('apt 2', addr.apartment)
+    
     def test_suffixless_street_with_city(self):
         addr = Address('431 West Johnson, Madison, WI', self.parser)
         self.assertEqual('431', addr.house_number)
