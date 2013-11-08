@@ -171,6 +171,10 @@ class AddressTest(unittest.TestCase):
 	      self.assertEqual('suite', addr.secondary_designator)
 	      self.assertEqual('suite 500', addr.delivery_line2)
 	  
+    def test_street_postdirection(self):
+	      addr = Address('351 King St. SW suite 500, San Francisco, CA 94158', self.parser)
+	      self.assertEqual('SW.', addr.street_postdirection)
+	  
 
 if __name__ == '__main__':
     unittest.main()

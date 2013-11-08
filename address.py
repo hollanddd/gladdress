@@ -94,20 +94,7 @@ class Address:
             if self.state_abbreviation: address = address.replace(self.state_abbreviation.lower(), '')
             if self.city_name: address = address.replace(self.city_name.lower(), '')
         
-        # populate the blind_guess with a house number if we can
-        primary_num_placeholder = address.split()[0]
-        try:
-            # yeah that's a little ugly but gets the job done
-            self.blind_guess['primary_number'] = str(int(primary_num_placeholder))
-        except ValueError:
-                if re.match(street_num_regex, primary_num_placeholder):
-                    # we got something like 111-123 or 111/123, lets stash it
-                    self.blind_guess['primary_number'] = primary_num_placeholder
-                else:
-                    # if we fall here we don't want that key to be available later
-                    # display to the screen for now
-                    print 'address zero index is:', primary_num_placeholder
-                    pass
+        self.guess_blindly(address)
         # Try all our address regexes. USPS says parse from the back.
         address = reversed(address.split())
         # Save unmatched to process after the rest is processed.
@@ -120,7 +107,7 @@ class Address:
             if self.check_city_name(token):           continue
             if self.check_street_suffix(token):       continue
             if self.check_primary_number(token):      continue
-            if self.check_street_predirection(token): continue
+            if self.check_street_directional(token):  continue
             if self.check_street(token):              continue
             if self.guess_unmatched(token):           continue
             
@@ -166,9 +153,14 @@ class Address:
         if self.city_name is None and self.state_abbreviation is not None and self.street_suffix is None:
             if token.lower() in self.parser.cities:
                 if len(token.split()) == 1:
-                    if self.blind_guess.has_key('city_name') and len(self.blind_guess['city_name'].split()) == 1:
-                        self.city_name = to_utf8(cap_words(token))
-                        return True
+                    if self.blind_guess.has_key('city_name'):
+                        if len(self.blind_guess['city_name'].split()) == 1:
+                            self.city_name = to_utf8(cap_words(token))
+                            return True
+                        elif len(self.blind_guess['city_name'].split()) == 2:
+                            # this city name is comming from a zip look up so i trust it more than the parsing logic
+                            self.city_name = self.blind_guess['city_name']
+                            return True
                     else:
                         self.city_name = to_utf8(cap_words(token))
             elif self.blind_guess.has_key('city_name'):
@@ -268,7 +260,7 @@ class Address:
             return True
         return False
     
-    def check_street_predirection(self, token):
+    def check_street_directional(self, token):
         '''
         Finds street directionals, such as N. or Northwest, before a street name. 
         Standardizes to 1 or two letters, followed by a period.
@@ -302,6 +294,55 @@ class Address:
                 self.building = to_utf8(token + ' ' + self.building)
             return True
         return False
+    
+    def guess_blindly(self, address):
+        '''populates dict named blind_guess with assumptions about address placement'''
+        # populate the blind_guess with a house number if we can
+        addr_parts = address.split()
+        primary_num_placeholder = addr_parts[0]
+        try:
+            # yeah that's a little ugly but gets the job done
+            self.blind_guess['primary_number'] = str(int(primary_num_placeholder))
+            # we might have a primary number so lets take a stab at guessing some other things
+            if len(addr_parts[1]) <= 2: # we probably have a street predirection
+                if addr_parts[1] in self.parser.directionals.keys():
+                    self.blind_guess['street_predirection'] = self.parser.directionals[addr_parts[1]]
+                    # and then a street name and suffix to follow. lets guess
+                    self.blind_guess['street_name'] = addr_parts[2]
+                    self.blind_guess['street_suffix'] = addr_parts[3]
+                    if len(addr_parts[4]) <=2 and addr_parts[4] in self.parser.directionals.keys():
+                        # we have a postdirectional ?
+                        self.blind_guess['street_postdirection'] = self.parser.directionals[addr_parts[4]]
+            else: 
+                if addr_parts[1] not in self.parser.directionals.values(): # we probalby have a street
+                    self.blind_guess['street_name'] = addr_parts[1]
+                    # and if that's the case we can guess that what follows is the suffix
+                    self.blind_guess['street_suffix'] = addr_parts[2]
+                    if len(addr_parts[3]) <=2 and addr_parts[3] in self.parser.directionals.keys():
+                        # we have a postdirectional ?
+                        self.blind_guess['street_postdirection'] = self.parser.directionals[addr_parts[3]]
+                    
+                else: # it is the long for directional
+                    self.blind_guess['street_predirection'] = addr_parts[1]
+                    # and then a street name and suffix to follow. lets guess
+                    self.blind_guess['street_name'] = addr_parts[2]
+                    self.blind_guess['street_suffix'] = addr_parts[3]
+                    if len(addr_parts[4]) <=2 and addr_parts[4] in self.parser.directionals.keys():
+                        # we have a postdirectional ?
+                        self.blind_guess['street_postdirection'] = self.parser.directionals[addr_parts[4]]
+                    
+        except ValueError:
+            if re.match(street_num_regex, primary_num_placeholder):
+                # we got something like 111-123 or 111/123, lets stash it
+                self.blind_guess['primary_number'] = primary_num_placeholder
+            else:
+                # if we fall here we don't want that key to be available later
+                # display to the screen for now
+                print 'address zero index is:', primary_num_placeholder
+                pass
+        except IndexError:
+            # we can't make any more guesses because we don't have anything else to guess
+            pass        
     
     def guess_unmatched(self, token):
         '''
@@ -454,6 +495,7 @@ class Address:
         '''dict of medatadata'''
         meta_data = OrderedDict()
         meta_data['blind_guess'] = self.blind_guess
+        meta_data['unmatched'] = self.unmatched_list
         return meta_data
     
     def formats(self):
@@ -498,5 +540,5 @@ class Address:
 
 if __name__ == '__main__':
     ap = AddressParser()
-    addr = Address('351 King St., San Francisco, CA, 94158', ap)
+    addr = Address('351 King St. SW suite 500, San Francisco, CA 94158', ap)
     print addr.pp_json()
