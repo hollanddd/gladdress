@@ -1,4 +1,5 @@
-import re
+import re, json, pprint
+from collections import OrderedDict
 from address_parser import AddressParser
 from __util__ import *
 
@@ -372,34 +373,51 @@ class Address:
     def __str__(self):
         return unicode(self)
     
+    def components(self):
+        '''dict of components'''
+        components = OrderedDict()
+        components['primary_number'] = self.primary_number
+        components['street_predirection'] = self.street_predirection
+        components['street_name'] = self.street_name
+        components['street_postdirection'] = self.street_postdirection
+        components['street_suffix'] = self.street_suffix
+        components['secondary_number'] = self.secondary_number
+        components['secondary_designator'] = self.secondary_designator
+        components['city_name'] = self.city_name
+        components['state_abbreviation'] = self.state_abbreviation
+        components['zip_code'] = self.zip_code
+        components['plus4_code'] = self.plus4_code
+        return components
+    
     def as_dict(self):
         '''returns dict representation of address'''
-        address_dict = {
-                            'input_given': self.original,
-                            'comma_delimited': self.comma_separated_address,
-                            'primary_number': self.primary_number,
-                            'street_predirection': self.street_predirection,
-                            'street_name': self.street_name,
-                            'street_suffix': self.street_suffix,
-                            'secondary_designator': self.secondary_designator,
-                            'city_name': self.city_name,
-                            'state_abbreviation': self.state_abbreviation,
-                            'zip_code': self.zip_code,
-                            'plus4_code': self.plus4_code,
-                            'unmatched': self.unmatched_list,
-                            'issues': self.issues,
-                            'blind_guess': self.blind_guess
-                        }
+        address_dict = OrderedDict()
+        address_dict['address_provided'] = self.original
+        address_dict['delivery_line'] =    self.delivery_line
+        address_dict['delivery_line2'] =   self.delivery_line2
+        address_dict['last_line'] =        self.last_line
+        address_dict['components'] =       self.components()
+        address_dict['metadata'] =         self.metadata
+        address_dict['analysis'] =         self.analysis
         return address_dict
+    
+    def as_json(self, pretty=False):
+        '''provide in json format cause...'''
+        if pretty:
+            return json.dumps(self.as_dict(), ensure_ascii=False, indent=4)
+        return json.dumps(self.as_dict(), ensure_ascii=False)
+    
+    def pp_json(self):
+        return self.as_json(pretty=True)
     
     def __unicode__(self):
         ''''''
-        address_dict = self.as_dict()
-        return u"Address - Primary number: {primary_number} Predirection: {street_predirection} Street: {street_name} Suffix: {street_suffix}" \
-               u" Secondarydesignator: {secondary_designator} City: {city_name}, State: {state}, Zip: {zip}".format(**address_dict)
+        components = self.as_dict()['components']
+        return u"Address - Primary number: {primary_number}, Predirection: {street_predirection}, Street: {street_name}, Suffix: {street_suffix}," \
+               u" Secondary designator: {secondary_designator}, City: {city_name}, State: {state_abbreviation}, Zip: {zip_code}".format(**components)
     
 
 if __name__ == '__main__':
     ap = AddressParser()
     addr = Address('351 King St. 2nd Floor, San Francisco, CA, 94158', ap)
-    print addr.as_dict()
+    print addr.pp_json()
