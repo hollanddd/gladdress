@@ -89,11 +89,10 @@ class Address:
                 if self.check_zip(token): continue
                 if self.check_state(token): continue
                 if self.check_city_name(token): continue
-            
             if self.zip_code: address = address.replace(self.zip_code, '')
             if self.state_abbreviation: address = address.replace(self.state_abbreviation.lower(), '')
             if self.city_name: address = address.replace(self.city_name.lower(), '')
-        
+            
         self.guess_blindly(address)
         # Try all our address regexes. USPS says parse from the back.
         address = reversed(address.split())
@@ -104,9 +103,9 @@ class Address:
             # Check zip code first
             if self.check_zip(token):                 continue
             if self.check_state(token):               continue
-            if self.check_city_name(token):           continue
+            if self.check_city_name(token):           continue            
             if self.check_street_suffix(token):       continue
-            if self.check_primary_number(token):      continue
+            if self.check_primary_number(token):      continue            
             if self.check_street_directional(token):  continue
             if self.check_street(token):              continue
             if self.guess_unmatched(token):           continue
@@ -230,7 +229,6 @@ class Address:
         Attempts to match a street suffix. If found, it will return the abbreviation, 
         with the first letter capitalized and a period after it. E.g. "St." or "Ave."
         '''
-        # suffix must come before street
         if self.street_suffix is None and self.street_name is None:
             if token.upper() in self.parser.suffixes.keys():
                 suffix = self.parser.suffixes[token.upper()]
@@ -257,7 +255,7 @@ class Address:
             return True
         if not self.street_suffix and not self.street_name and token.lower() in self.parser.streets:
             self.street_name = to_utf8(token)
-            return True
+            return True    
         return False
     
     def check_street_directional(self, token):
@@ -540,5 +538,6 @@ class Address:
 
 if __name__ == '__main__':
     ap = AddressParser()
+    #addr = Address('407 West Doty St. #2', ap)
     addr = Address('351 King St. SW suite 500, San Francisco, CA 94158', ap)
     print addr.pp_json()
