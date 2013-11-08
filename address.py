@@ -457,10 +457,10 @@ class Address:
         # Now let's get the secondary_designator stuff out of the way. Using only sure match regexes, delete secondary_designator parts from
         # the address. This prevents things like "Unit" being the street name.
         secondary_designator_regexes = [
-                             r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
-                             r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
-                             r'style\s\w{1,2}', r'townhouse style\s\w{1,2}', r'\d*\w* floor', r'suite \d*'
-                            ]
+                                         r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
+                                         r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
+                                         r'style\s\w{1,2}', r'townhouse style\s\w{1,2}', r'\d*\w* floor', r'suite \d*'
+                                        ]
         
         for regex in secondary_designator_regexes:
             secondary_designator_match = re.search(regex, address, re.IGNORECASE)
