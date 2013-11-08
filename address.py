@@ -8,6 +8,7 @@ class InvalidAddressException(Exception): pass
 # Keep lowercase, no periods
 # Requires number first, then optional dash plus numbers
 street_num_regex = r'^(\d+)([-/\w*]?)(\d*)$'
+secondary_designators = ['unit', 'floor', 'building', 'suite', 'ste', 'apt', 'apartment', 'flr']
 secondary_designator_regex_num = r'(#?)(\d*)(\w*)'
 secondary_designator_regexes = [
                                  r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
@@ -361,7 +362,21 @@ class Address:
                         break
                 if carry_on:
                     # print "Matched regex: ", regex, secondary_designator_match.group()
-                    self.secondary_designator = to_utf8(secondary_designator_match.group())
+                    parts = secondary_designator_match.group().split()
+                    if len(parts) == 1:
+                        for char in parts[0]:
+                            if char == '#': self.secondary_number = to_utf8(parts[0])
+                    if len(parts) == 2:
+                        for part in parts:
+                            if part.lower() in secondary_designators:
+                                if parts.index(part) == 0:
+                                    self.secondary_number = to_utf8(parts[1])
+                                    self.secondary_designator = to_utf8(parts[0])
+                                elif parts.index(part) == 1:
+                                    self.secondary_number = to_utf8(parts[0])
+                                    self.secondary_designator = to_utf8(parts[1])
+                    else:
+                        self.secondary_designator = to_utf8(secondary_designator_match.group())
                     address = re.sub(regex, "", address, flags=re.IGNORECASE)
             # Now check for things like ",  ,"
         address = re.sub(r"\,\s*\,", ",", address)
@@ -415,5 +430,5 @@ class Address:
 
 if __name__ == '__main__':
     ap = AddressParser()
-    addr = Address('351 King St. 2nd Floor, San Francisco, CA, 94158', ap)
-    print addr
+    addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
+    print addr.pp_json()
