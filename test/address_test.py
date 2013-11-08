@@ -48,6 +48,7 @@ class AddressTest(unittest.TestCase):
         self.assertEqual('WI', addr.state_abbreviation)
         self.assertEqual('53703', addr.zip_code)
         self.assertEqual(None, addr.secondary_designator)
+        self.assertEqual('Madison, WI 53703', addr.last_line)
     
     def test_multi_address(self):
         addr = Address('416/418 N. Carroll St.', self.parser)
@@ -77,6 +78,7 @@ class AddressTest(unittest.TestCase):
         self.assertEqual('W.', addr.street_predirection)
         self.assertEqual('Washington', addr.street_name)
         self.assertEqual('Ave.', addr.street_suffix)
+        self.assertEqual('504 W. Washington Ave.', addr.delivery_line)
         self.assertEqual(None, addr.city_name)
         self.assertEqual(None, addr.state_abbreviation)
         self.assertEqual(None, addr.zip_code)
@@ -92,6 +94,7 @@ class AddressTest(unittest.TestCase):
         self.assertEqual(None, addr.state_abbreviation)
         self.assertEqual(None, addr.zip_code)
         self.assertEqual('#2', addr.secondary_number)
+        self.assertEqual('#2', addr.delivery_line2)
     
     def test_stray_dash_secondary_designator(self):
         addr = Address('407 West Doty St. - #2', self.parser)
@@ -115,6 +118,7 @@ class AddressTest(unittest.TestCase):
         self.assertEqual(None, addr.zip_code)
         self.assertEqual('2', addr.secondary_number)
         self.assertEqual('unit', addr.secondary_designator)
+        self.assertEqual('unit 2', addr.delivery_line2)
     
     def test_unit_street_rhode_island(self):
         addr = Address('111-123 Unit St providence RI 02909', self.parser)
@@ -165,6 +169,7 @@ class AddressTest(unittest.TestCase):
 	      addr = Address('351 King St. suite 500, San Francisco, CA, 94158', self.parser)
 	      self.assertEqual('500', addr.secondary_number)
 	      self.assertEqual('suite', addr.secondary_designator)
+	      self.assertEqual('suite 500', addr.delivery_line2)
 	  
 
 if __name__ == '__main__':

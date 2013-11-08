@@ -8,12 +8,12 @@ class InvalidAddressException(Exception): pass
 # Keep lowercase, no periods
 # Requires number first, then optional dash plus numbers
 street_num_regex = r'^(\d+)([-/\w*]?)(\d*)$'
-secondary_designators = ['unit', 'floor', 'building', 'suite', 'ste', 'apt', 'apartment', 'flr']
+secondary_designators = ['apartment', 'apt', 'building', 'bldg', 'floor', 'fl', 'flr', 'suite', 'ste', 'unit', 'room', 'rm', 'department', 'dept']
 secondary_designator_regex_num = r'(#?)(\d*)(\w*)'
 secondary_designator_regexes = [
                                  r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
                                  r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
-                                 r'style\s\w{1,2}', r'townhouse style\s\w{1,2}', r'\d*\w* floor', r'suite \d*'
+                                 r'style\s\w{1,2}', r'townhouse style\s\w{1,2}', r'floor \d', r'\d*\w* floor', r'suite \d*'
                                 ]
 
 class Address:
@@ -126,7 +126,6 @@ class Address:
             
             unmatched.append(token)
             
-        # Post processing
         self.unmatched_list = unmatched
         if len(unmatched) == 2:
             if self.check_secondary_designator_number(' '.join(reversed(unmatched))):
@@ -136,6 +135,8 @@ class Address:
             for token in unmatched:
                 if self.check_secondary_designator_number(token): continue
                 self.unmatched = True
+                
+        self.post_process()
     
     def check_zip(self, token):
         '''
@@ -330,16 +331,23 @@ class Address:
     def full_address(self):
         '''print human readable address'''
         addr = ''
-        if self.primary_number:       addr = addr + self.primary_number
-        if self.street_predirection:  addr = addr + " " + self.street_predirection
-        if self.street_name:          addr = addr + " " + self.street_name
-        if self.street_suffix:        addr = addr + " " + self.street_suffix
-        if self.secondary_designator: addr = addr + " " + self.secondary_designator
-        if self.city_name:            addr = addr + ", " + self.city_name
-        if self.state_abbreviation:   addr = addr + ", " + self.state_abbreviation
-        if self.zip_code:             addr = addr + " " + self.zip_code
-        if self.plus4_code:           addr = addr + "-" + self.plus4_code
+        if self.delivery_line: addr += self.delivery_line + ' '
+        if self.delivery_line2: 
+            addr += self.delivery_line2 + '\n'
+        else: 
+            addr = addr.strip() + '\n'
+        if self.last_line: addr += self.last_line
         return addr
+    
+    def usps_normalized(self):
+        '''returns normalized address per upsps pub28'''
+        return self._scrubbed_address().upper()
+    
+    def _scrubbed_address(self):
+        return self.full_address().replace(',', '').replace('.', '').upper()
+    
+    def one_line_usps(self):
+        return self.usps_normalized().replace('\n', ' ')
     
     def preprocess_address(self, address):
         '''
@@ -363,10 +371,11 @@ class Address:
                 if carry_on:
                     # print "Matched regex: ", regex, secondary_designator_match.group()
                     parts = secondary_designator_match.group().split()
+                    self.blind_guess['delivery_line2'] = to_utf8(secondary_designator_match.group())
                     if len(parts) == 1:
                         for char in parts[0]:
                             if char == '#': self.secondary_number = to_utf8(parts[0])
-                    if len(parts) == 2:
+                    elif len(parts) == 2:
                         for part in parts:
                             if part.lower() in secondary_designators:
                                 if parts.index(part) == 0:
@@ -382,11 +391,48 @@ class Address:
         address = re.sub(r"\,\s*\,", ",", address)
         return address
     
-    def __repr__(self):
-        return unicode(self)
+    def post_process(self):
+        '''builds analysis, metadata, and delivery lines.'''
+        self.delivery_line = self._set_delivery_line()
+        self.delivery_line2 = self._set_delivery_line2()
+        self.last_line = self._set_last_line()
     
-    def __str__(self):
-        return unicode(self)
+    def _set_delivery_line(self):
+        '''determines first delivery line give primary_number and street componenets'''
+        dl1 = ''
+        if self.primary_number: dl1 += self.primary_number + ' '
+        if self.street_predirection: dl1 += self.street_predirection + ' '
+        if self.street_name: dl1 += self.street_name + ' '
+        if self.street_suffix: dl1 += self.street_suffix + ' '
+        if self.street_postdirection: dl1 = self.street_postdirection
+        return dl1.strip()
+    
+    def _set_delivery_line2(self):
+        '''determines delivery line 2 given secondary designators'''
+        dl2 = None
+        if self.secondary_number and self.secondary_designator:
+            if self.blind_guess.has_key('delivery_line2'):
+                blind_dl2_parts = self.blind_guess['delivery_line2'].split()
+                des_index = blind_dl2_parts.index(self.secondary_designator)
+                num_index = blind_dl2_parts.index(self.secondary_number)
+                if des_index == 0:
+                    dl2 = self.secondary_designator + ' ' + self.secondary_number
+                else:
+                    dl2 = self.secondary_number + ' ' + self.secondary_designator
+        elif self.secondary_number and not self.secondary_designator:
+            dl2 = self.secondary_number
+        elif not self.secondary_number and self.secondary_designator:
+            dl2 = self.secondary_designator
+        return dl2
+    
+    def _set_last_line(self):
+        '''determines last line given city state zip'''
+        last_line = ''
+        if self.city_name: last_line += self.city_name
+        if self.state_abbreviation: last_line += ', ' + self.state_abbreviation
+        if self.zip_code: last_line += ' ' + self.zip_code
+        if self.plus4_code: last_line += '-' + self.plus4_code
+        return last_line
     
     def components(self):
         '''dict of components'''
@@ -404,6 +450,20 @@ class Address:
         components['plus4_code'] = self.plus4_code
         return components
     
+    def meta_data(self):
+        '''dict of medatadata'''
+        meta_data = OrderedDict()
+        meta_data['blind_guess'] = self.blind_guess
+        return meta_data
+    
+    def formats(self):
+        '''dict of format representations'''
+        formats = OrderedDict()
+        formats['usps'] = self.usps_normalized()
+        formats['oneline'] = self.one_line_usps()
+        formats['downcase_oneline'] = self.one_line_usps().lower() 
+        return formats
+    
     def as_dict(self):
         '''returns dict representation of address'''
         address_dict = OrderedDict()
@@ -412,8 +472,9 @@ class Address:
         address_dict['delivery_line2'] =   self.delivery_line2
         address_dict['last_line'] =        self.last_line
         address_dict['components'] =       self.components()
-        address_dict['metadata'] =         self.metadata
+        address_dict['metadata'] =         self.meta_data()
         address_dict['analysis'] =         self.analysis
+        address_dict['formats'] =          self.formats()
         return address_dict
     
     def as_json(self, pretty=False):
@@ -425,10 +486,17 @@ class Address:
     def pp_json(self):
         return self.as_json(pretty=True)
     
+    def __repr__(self):
+        return unicode(self)
+    
+    def __str__(self):
+        return unicode(self)
+    
     def __unicode__(self):
         return self.as_json()
+    
 
 if __name__ == '__main__':
     ap = AddressParser()
-    addr = Address('351 King St. #400, San Francisco, CA, 94158', ap)
+    addr = Address('351 King St., San Francisco, CA, 94158', ap)
     print addr.pp_json()
