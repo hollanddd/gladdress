@@ -7,9 +7,12 @@ class InvalidAddressException(Exception): pass
 # Keep lowercase, no periods
 # Requires number first, then optional dash plus numbers
 street_num_regex = r'^(\d+)([-/\w*]?)(\d*)$'
-
 secondary_designator_regex_num = r'(#?)(\d*)(\w*)'
-
+secondary_designator_regexes = [
+                                 r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
+                                 r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
+                                 r'style\s\w{1,2}', r'townhouse style\s\w{1,2}', r'\d*\w* floor', r'suite \d*'
+                                ]
 
 class Address:
     '''
@@ -214,12 +217,6 @@ class Address:
         Finds secondary_designator, unit, #, etc, regardless of spot in string. This needs to come after everything 
         else has been ruled out, because it has a lot of false positives.
         '''
-        secondary_designator_regexes = [
-                             r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
-                             r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
-                             r'style\s\w{1,2}', r'\d{1,4}/\d{1,4}', r'\d{1,4}', r'\w{1,2}'
-                            ]
-        
         for regex in secondary_designator_regexes:
             if re.match(regex, token.lower()):
                 self.secondary_designator = to_utf8(token)
@@ -353,12 +350,6 @@ class Address:
             address = re.sub(r"-?-?\w+ units", "", address, flags=re.IGNORECASE)        
         # Now let's get the secondary_designator stuff out of the way. Using only sure match regexes, delete secondary_designator parts from
         # the address. This prevents things like "Unit" being the street name.
-        secondary_designator_regexes = [
-                                         r'#\w+ & \w+', '#\w+ rm \w+', "#\w+-\w", r'apt #{0,1}\w+', r'apartment #{0,1}\w+', r'#\w+',
-                                         r'# \w+', r'rm \w+', r'unit #?\w+', r'units #?\w+', r'- #{0,1}\w+', r'no\s?\d+\w*',
-                                         r'style\s\w{1,2}', r'townhouse style\s\w{1,2}', r'\d*\w* floor', r'suite \d*'
-                                        ]
-        
         for regex in secondary_designator_regexes:
             secondary_designator_match = re.search(regex, address, re.IGNORECASE)
             if secondary_designator_match:
