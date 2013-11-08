@@ -411,13 +411,9 @@ class Address:
         return self.as_json(pretty=True)
     
     def __unicode__(self):
-        ''''''
-        components = self.as_dict()['components']
-        return u"Address - Primary number: {primary_number}, Predirection: {street_predirection}, Street: {street_name}, Suffix: {street_suffix}," \
-               u" Secondary designator: {secondary_designator}, City: {city_name}, State: {state_abbreviation}, Zip: {zip_code}".format(**components)
-    
+        return self.as_json()
 
 if __name__ == '__main__':
     ap = AddressParser()
     addr = Address('351 King St. 2nd Floor, San Francisco, CA, 94158', ap)
-    print addr.pp_json()
+    print addr
